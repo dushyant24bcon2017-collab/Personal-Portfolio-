@@ -82,7 +82,7 @@ export default function Home() {
           </h2>
           <div className="text-slate text-lg leading-relaxed max-w-3xl space-y-6">
             <p>
-              I am a second-year B.Tech Computer Science student at JECRC University, based in Jaipur. I specialize in building full-stack applications with a heavy focus on the PERN stack, TypeScript, and the Prisma ORM.
+              I am a second-year B.Tech Computer Science student at JECRC University, based in Jaipur. I specialize in building full-stack applications with a heavy focus on the PERN stack, TypeScript, Prisma ORM, Next.js.
             </p>
             <p>
               For me, writing code is a lot like hitting an Upper/Lower split at the gym—it requires consistency, heavy lifting, and strict attention to the details. When I'm not architecting multi-tenant database schemas or debugging state management, I'm probably reading Books or running matches in EA FC.
