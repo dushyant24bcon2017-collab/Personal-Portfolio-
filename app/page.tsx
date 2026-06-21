@@ -85,7 +85,7 @@ export default function Home() {
               I am a second-year B.Tech Computer Science student at JECRC University, based in Jaipur. I specialize in building full-stack applications with a heavy focus on the PERN stack, TypeScript, and the Prisma ORM.
             </p>
             <p>
-              For me, writing code is a lot like hitting an Upper/Lower split at the gym—it requires consistency, heavy lifting, and strict attention to the details. When I'm not architecting multi-tenant database schemas or debugging state management, I'm probably reading Dostoevsky or running matches in EA FC.
+              For me, writing code is a lot like hitting an Upper/Lower split at the gym—it requires consistency, heavy lifting, and strict attention to the details. When I'm not architecting multi-tenant database schemas or debugging state management, I'm probably reading Books or running matches in EA FC.
             </p>
           </div>
         </section>
