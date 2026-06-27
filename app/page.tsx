@@ -183,7 +183,8 @@ export default function Home() {
                 <p className="text-slate font-mono text-sm mt-4 md:mt-0 opacity-70">Aug 2025 - Present</p>
               </div>
               <p className="text-slate leading-relaxed max-w-3xl text-lg">
-                Launched and scaled an artisanal bakery brand, managing digital presence, brand identity, and logistical operations for both signature and health-focused product lines. 
+              Launched and managed operations for an artisanal bakery brand, taking full ownership of product branding, organic
+content strategy, and driving initial salesDeveloped a lightweight digital storefront to establish an early online presence and facilitate basic customer orders.
               </p>
             </div>
           </div>
