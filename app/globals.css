@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+ 
 @theme {
   /* Colors */
   --color-midnight: #0a0a0a;
@@ -9,23 +9,24 @@
   --color-parchment: #ededed;
   --color-dough: #e67e22;
   --color-supabase: #3ecf8e;
-
+  --color-wire: #5b7a99;
+ 
   /* Typography */
   --font-display: var(--font-cormorant);
   --font-body: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-
+ 
   /* Border Radius */
   --radius-cards: 12px;
   --radius-buttons: 9999px;
 }
-
+ 
 body {
   background-color: var(--color-midnight);
   color: var(--color-parchment);
   overflow-x: hidden;
 }
-
+ 
 /* The Architect's Blueprint Grid */
 .blueprint-grid {
   position: fixed;
@@ -40,7 +41,7 @@ body {
   z-index: -2;
   pointer-events: none;
 }
-
+ 
 /* Ambient Lighting / Gallery Spotlight */
 .ambient-glow {
   position: fixed;
@@ -53,14 +54,14 @@ body {
   z-index: -1;
   pointer-events: none;
 }
-
+ 
 /* Elevated Card Styling */
 .glass-card {
   background: linear-gradient(180deg, rgba(23, 23, 23, 0.8) 0%, rgba(10, 10, 10, 0.95) 100%);
   backdrop-filter: blur(12px);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-
+ 
 /* Button Glow Effects */
 .glow-button {
   transition: all 0.3s ease;
@@ -68,4 +69,49 @@ body {
 .glow-button:hover {
   box-shadow: 0 0 20px rgba(230, 126, 34, 0.3);
   transform: translateY(-1px);
+}
+ 
+/* Schematic Trace — the signature element for project cards.
+   Renders a tiny pipeline diagram of the actual mechanism. */
+.trace {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  line-height: 1.7;
+}
+.trace-node {
+  color: var(--color-wire);
+  white-space: nowrap;
+}
+.trace-arrow {
+  color: var(--color-ash);
+  margin: 0 0.5rem;
+}
+.trace-arrow::before {
+  content: "→";
+}
+ 
+/* Hairline divider used inside cards to separate narrative from mechanism */
+.hairline {
+  height: 1px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.08), transparent);
+}
+ 
+/* Keep keyboard focus visible without disturbing the visual language */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-dough);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+ 
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
