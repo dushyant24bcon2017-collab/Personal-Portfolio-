@@ -56,8 +56,8 @@
       linear-gradient(90deg, var(--color-trace-gray) 1px, transparent 1px);
     background-size: 32px 32px;
     opacity: 0.9;
-    -webkit-mask-image: radial-gradient(ellipse 80% 130% at 50% 0%, black 45%, transparent 100%);
-    mask-image: radial-gradient(ellipse 80% 130% at 50% 0%, black 45%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 90% at 50% 0%, black 45%, transparent 100%);
+    mask-image: radial-gradient(ellipse 70% 90% at 50% 0%, black 45%, transparent 100%);
     pointer-events: none;
   }
 
@@ -72,7 +72,7 @@
       linear-gradient(var(--color-grid-line) 1px, transparent 1px),
       linear-gradient(90deg, var(--color-grid-line) 1px, transparent 1px);
     background-size: 128px 128px;
-  opacity: 0.7;
+  opacity: 0.9;
 
 -webkit-mask-image: radial-gradient(ellipse 30% 80% at 50% 0%, black 10%, transparent 100%);
 mask-image: radial-gradient(ellipse 30% 80% at 50% 0%, black 10%, transparent 100%);
