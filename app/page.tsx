@@ -163,7 +163,48 @@ function ContactButton() {
     </div>
   );
 }
+function Typewriter() {
+  const phrases = [
+    "Full-Stack Developer focused on Next.js & the PERN ecosystem.",
+    "Architecting disciplined and scalable systems with modern tooling.",
+    "Building scalable backends.",
+    "Building secure API gateways."
+  ];
+  
+  const [text, setText] = useState("");
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  useEffect(() => {
+    const currentPhrase = phrases[phraseIndex];
+    // Deleting is usually faster than typing for a better feel
+    const typeSpeed = isDeleting ? 30 : 60; 
+
+    const timeout = setTimeout(() => {
+      if (!isDeleting && text === currentPhrase) {
+        // Pause when the phrase is fully typed out
+        setTimeout(() => setIsDeleting(true), 1500);
+      } else if (isDeleting && text === "") {
+        // Move to the next phrase once fully deleted
+        setIsDeleting(false);
+        setPhraseIndex((prev) => (prev + 1) % phrases.length);
+      } else {
+        // Add or remove a character
+        setText(currentPhrase.substring(0, text.length + (isDeleting ? -1 : 1)));
+      }
+    }, typeSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [text, isDeleting, phraseIndex]);
+
+  return (
+    // min-h-[48px] prevents the page layout from jumping up and down when the text wraps to two lines or deletes completely
+    <p className="font-fieldwork font-normal text-[16px] leading-relaxed text-[var(--color-ink)] mb-[24px] max-w-[560px] min-h-[48px]">
+      {text}
+      <span className="inline-block w-[8px] h-[15px] bg-[var(--color-solder-mask)] ml-[4px] animate-pulse align-middle"></span>
+    </p>
+  );
+}
 // Scanning-reticle logomark. Same corner-bracket language as the
 // Component Index cards, animated with a sweep line — the site's one
 // dynamic brand mark, used exactly once so it stays a signature.
@@ -282,9 +323,7 @@ export default function Home() {
               <h1 className="font-panelface font-medium text-[56px] leading-[1.08] tracking-[0.02em] text-[var(--color-ink)] mb-[16px]">
                 Dushyant Singh Rathore
               </h1>
-              <p className="font-fieldwork font-normal text-[16px] leading-relaxed text-[var(--color-ink)] mb-[24px] max-w-[560px]">
-                Full-Stack Developer focused on Next.js & the PERN ecosystem. Architecting disciplined and scalable systems with modern tooling.
-              </p>
+              <Typewriter />
               <div className="font-mono text-[13px] text-[var(--color-legend-gray)] mb-[32px] flex items-center gap-2">
                 <span>B.TECH CSE</span>
                 <span>·</span>
