@@ -1,16 +1,144 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// The interactive Contact Button component
+// Interactive terminal — "session.log". A printed listing you can type into,
+// not an OS-window imitation, per the Terminal Snippet Block spec.
+function TerminalWidget() {
+  type Line = { type: "input" | "output"; text: string };
+
+  const RESUME_URL =
+    "https://drive.google.com/file/d/1H9jwn3A_bsfRPFyE4GUPwypLX_Or35Wo/view?usp=sharing";
+
+  const [history, setHistory] = useState<Line[]>([
+    { type: "output", text: "session initialized — type 'help' to begin" },
+  ]);
+  const [value, setValue] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const commands: Record<string, () => string[]> = {
+    help: () => [
+      "available commands:",
+      "  whoami       who is running this session",
+      "  ls           list shipped components",
+      "  cat resume   open resume in a new tab",
+      "  contact      get in touch",
+      "  clear        clear the log",
+    ],
+    whoami: () => [
+      "dushyant_singh_rathore — full-stack developer",
+      "jaipur, in · b.tech cse · rev 2.0",
+    ],
+    ls: () => [
+      "U1  high-concurrency-api-gateway    [shipped]",
+      "U2  tuple-cursor-pagination         [shipped]",
+      "U3  logistics-dashboard             [in progress]",
+      "U4  ai-travel-planner               [shipped]",
+    ],
+    "cat resume": () => {
+      window.open(RESUME_URL, "_blank", "noopener,noreferrer");
+      return ["opening résumé in a new tab..."];
+    },
+    contact: () => ["dushyant.24bcon2017@jecrcu.edu.in", "status: receiving"],
+  };
+
+  const runCommand = (raw: string) => {
+    const cmd = raw.trim().toLowerCase();
+    if (cmd === "") return;
+    if (cmd === "clear") {
+      setHistory([]);
+      return;
+    }
+    const handler = commands[cmd];
+    const output = handler ? handler() : [`command not found: ${cmd} — try 'help'`];
+    setHistory((h) => [
+      ...h,
+      { type: "input", text: raw },
+      ...output.map((text) => ({ type: "output" as const, text })),
+    ]);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    runCommand(value);
+    setValue("");
+  };
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [history]);
+
+  return (
+    <div
+      className="w-full bg-[var(--color-substrate-deep)] border border-[var(--color-trace-gray)] rounded-[2px]"
+      onClick={() => inputRef.current?.focus()}
+    >
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-trace-gray)]">
+        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--color-legend-gray)]">
+          session.log
+        </span>
+        <span className="font-mono text-[11px] text-[var(--color-legend-gray)]">rev 2.0</span>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="h-[220px] overflow-y-auto px-4 py-3 font-mono text-[13px] leading-[1.6] scroll-smooth"
+      >
+        {history.map((line, i) =>
+          line.type === "input" ? (
+            <div key={i} className="text-[var(--color-ink)]">
+              <span className="text-[var(--color-solder-mask)]">guest@dsr:~$</span> {line.text}
+            </div>
+          ) : (
+            <div key={i} className="text-[var(--color-legend-gray)] whitespace-pre-wrap">
+              {line.text}
+            </div>
+          )
+        )}
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="flex items-center gap-2 px-4 py-2 border-t border-[var(--color-trace-gray)]"
+      >
+        <span className="font-mono text-[13px] text-[var(--color-solder-mask)]">guest@dsr:~$</span>
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="flex-1 bg-transparent outline-none font-mono text-[13px] text-[var(--color-ink)] placeholder:text-[var(--color-legend-gray)] min-w-0"
+          placeholder="type 'help'"
+          spellCheck={false}
+          autoComplete="off"
+          aria-label="Interactive terminal command input"
+        />
+      </form>
+    </div>
+  );
+}
+
+// Contact Button designed to spec: single fill color, lift shadow, solder-mask hover
 function ContactButton() {
   const [showNotification, setShowNotification] = useState(false);
   const email = "dushyant.24bcon2017@jecrcu.edu.in";
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(email);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(email);
+      } else {
+        // Fallback for non-secure contexts (some http hosts, older browsers)
+        const el = document.createElement("textarea");
+        el.value = email;
+        el.style.position = "fixed";
+        el.style.opacity = "0";
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 2500);
     } catch (err) {
@@ -19,329 +147,445 @@ function ContactButton() {
   };
 
   return (
-    <div className="relative inline-flex flex-col items-center mt-8">
-      <div 
-        className={`absolute -top-14 bg-gray-800 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-lg whitespace-nowrap transition-all duration-300 pointer-events-none ${
-          showNotification ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+    <div className="relative inline-flex flex-col items-start mt-6">
+      <div
+        role="status"
+        aria-live="polite"
+        className={`absolute -top-12 left-0 bg-[var(--color-substrate-deep)] border border-[var(--color-trace-gray)] text-[var(--color-ink)] font-mono text-[12px] py-1.5 px-3 transition-all duration-200 pointer-events-none rounded-[2px] ${
+          showNotification ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
         }`}
       >
-        Email copied to clipboard!
-        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
+        [EMAIL_COPIED_TO_CLIPBOARD]
       </div>
-      <button
-        onClick={handleCopy}
-        className="glow-button bg-dough text-midnight font-body font-semibold px-10 py-4 rounded-buttons text-lg inline-block transition-transform active:scale-95 cursor-pointer"
-      >
-        Get In Touch
+      <button onClick={handleCopy} className="btn-primary" aria-label={`Copy email address ${email}`}>
+        Initialize Contact
       </button>
     </div>
   );
 }
 
+// Scanning-reticle logomark. Same corner-bracket language as the
+// Component Index cards, animated with a sweep line — the site's one
+// dynamic brand mark, used exactly once so it stays a signature.
+// Scanning-reticle logomark. Same corner-bracket language as the
+// Component Index cards, animated with a sweep line — the site's one
+// dynamic brand mark, used exactly once so it stays a signature.
+function ScanningMark() {
+  return (
+    <span className="relative inline-flex h-[22px] w-[22px] shrink-0" aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="h-full w-full overflow-visible">
+        <path d="M2 7V2H7" className="scan-bracket" fill="none" stroke="var(--color-solder-mask)" strokeWidth="1.5" strokeLinecap="square" />
+        <path d="M17 2H22V7" className="scan-bracket" fill="none" stroke="var(--color-solder-mask)" strokeWidth="1.5" strokeLinecap="square" style={{ animationDelay: "0.15s" }} />
+        <path d="M22 17V22H17" className="scan-bracket" fill="none" stroke="var(--color-solder-mask)" strokeWidth="1.5" strokeLinecap="square" style={{ animationDelay: "0.3s" }} />
+        <path d="M7 22H2V17" className="scan-bracket" fill="none" stroke="var(--color-solder-mask)" strokeWidth="1.5" strokeLinecap="square" style={{ animationDelay: "0.45s" }} />
+        <line x1="12" y1="10" x2="12" y2="14" stroke="var(--color-trace-gray)" strokeWidth="1" />
+        <line x1="10" y1="12" x2="14" y2="12" stroke="var(--color-trace-gray)" strokeWidth="1" />
+        <clipPath id="scan-clip">
+          <rect x="2" y="2" width="20" height="20" />
+        </clipPath>
+        <g clipPath="url(#scan-clip)">
+          <rect x="2" y="1" width="20" height="1.5" fill="var(--color-solder-mask)" className="scan-sweep" />
+        </g>
+      </svg>
+    </span>
+  );
+}
+
 export default function Home() {
-  // Hamburger menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Close menu when a link is clicked
-  const handleLinkClick = () => {
-    setIsMobileMenuOpen(false);
-  };
+  const handleLinkClick = () => setIsMobileMenuOpen(false);
+
+  const navItems = ["About", "Timeline", "Components", "Specs"];
 
   return (
     <>
-      <div className="blueprint-grid"></div>
-      <div className="ambient-glow"></div>
-
-      {/* FIXED NAVBAR */}
-      <nav className="fixed top-0 w-full z-50 bg-midnight/70 backdrop-blur-lg border-b border-ash/40 transition-all duration-300">
-        <div className="max-w-[1200px] mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="#" className="font-display text-2xl font-extrabold tracking-tight text-parchment hover:text-white transition-colors" onClick={handleLinkClick}>
-            DSR<span className="text-dough">.</span>
+      {/* GLOBAL NAVIGATION */}
+      <nav className="fixed top-0 w-full z-50 bg-[var(--color-substrate)] border-b border-[var(--color-trace-gray)] h-[56px] flex items-center justify-between px-6 xl:px-0">
+        <div className="max-w-[960px] w-full mx-auto flex items-center justify-between">
+          <Link
+            href="#"
+            className="flex items-center gap-2 font-panelface font-bold text-[18px] uppercase tracking-widest text-[var(--color-ink)]"
+            onClick={handleLinkClick}
+          >
+            <ScanningMark />
+            DSR
+            <span className="sr-only">status: available</span>
           </Link>
-          
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {['About', 'Experience', 'Projects', 'Skills', 'Contact'].map((item) => (
-              <Link 
-                key={item} 
+
+          <div className="hidden md:flex items-center gap-[24px]">
+            {navItems.map((item) => (
+              <Link
+                key={item}
                 href={`#${item.toLowerCase()}`}
-                className="text-sm font-mono tracking-widest uppercase text-slate hover:text-dough transition-colors"
+                className="font-fieldwork font-medium text-[14px] uppercase tracking-[0.04em] text-[var(--color-ink)] hover:text-[var(--color-solder-mask)] transition-colors"
               >
                 {item}
               </Link>
             ))}
+            <Link href="#contact" className="btn-ghost ml-2">
+              Contact
+            </Link>
           </div>
 
-          {/* Hamburger Icon for Mobile */}
-          <button 
-            className="md:hidden text-parchment hover:text-dough transition-colors"
+          {/* Mobile Menu Toggle */}
+          <button
+            className="md:hidden text-[var(--color-ink)]"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? (
-              // Close (X) Icon
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18"/>
-                <path d="m6 6 12 12"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
               </svg>
             ) : (
-              // Hamburger Menu Icon
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" x2="20" y1="12" y2="12"/>
-                <line x1="4" x2="20" y1="6" y2="6"/>
-                <line x1="4" x2="20" y1="18" y2="18"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="18" y2="18" />
               </svg>
             )}
           </button>
         </div>
 
-        {/* Mobile Dropdown Menu */}
-        <div className={`md:hidden absolute top-20 left-0 w-full bg-midnight/95 backdrop-blur-xl border-b border-ash/40 transition-all duration-300 ease-in-out overflow-hidden ${isMobileMenuOpen ? 'max-h-[400px] py-6 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-          <div className="flex flex-col items-center gap-6">
-            {['About', 'Experience', 'Projects', 'Skills'].map((item) => (
-              <Link 
-                key={item} 
+        {/* Mobile Dropdown */}
+        <div
+          className={`md:hidden absolute top-[56px] left-0 w-full bg-[var(--color-substrate-deep)] border-b border-[var(--color-trace-gray)] transition-all duration-200 overflow-hidden ${
+            isMobileMenuOpen ? "max-h-[300px] border-b opacity-100" : "max-h-0 border-transparent opacity-0"
+          }`}
+        >
+          <div className="flex flex-col items-start p-6 gap-4">
+            {navItems.map((item) => (
+              <Link
+                key={item}
                 href={`#${item.toLowerCase()}`}
                 onClick={handleLinkClick}
-                className="text-base font-mono tracking-widest uppercase text-slate hover:text-dough transition-colors"
+                className="font-fieldwork font-medium text-[14px] uppercase tracking-[0.04em] text-[var(--color-ink)] w-full pb-2 border-b border-[var(--color-trace-gray)]"
               >
                 {item}
               </Link>
             ))}
-            <Link 
-              href="#contact" 
-              onClick={handleLinkClick}
-              className="mt-2 text-sm font-mono tracking-widest uppercase text-midnight bg-dough px-8 py-3 rounded-buttons hover:scale-105 transition-transform"
-            >
-              Contact
-            </Link>
           </div>
         </div>
       </nav>
 
-      <main className="relative z-10 min-h-screen font-body selection:bg-dough selection:text-midnight pt-20">
-        
-        {/* 1. HERO SECTION */}
-        <section className="max-w-[1200px] mx-auto px-6 min-h-[85vh] flex flex-col justify-center relative items-center text-center">
-          <div className="max-w-3xl relative z-10 flex flex-col items-center">
-            <div className="w-12 h-[1px] bg-dough mb-8 opacity-50"></div>
-            
-            <h1 className="scroll-m-20 text-center text-4xl md:text-6xl font-extrabold tracking-tight text-balance text-parchment drop-shadow-lg">
-              Dushyant Singh Rathore
-            </h1>
-            <p className="font-body font-normal text-slate text-lg md:text-xl mt-6 max-w-xl leading-relaxed text-balance">
-              Full-Stack Developer | Next.js & PERN Stack. Architecting disciplined, scalable systems with modern technologies.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mt-10 w-full sm:w-auto">
-              <Link 
-                href="https://drive.google.com/file/d/1H9jwn3A_bsfRPFyE4GUPwypLX_Or35Wo/view?usp=sharing" 
-                className="glow-button bg-dough text-midnight font-body font-semibold px-7 py-3.5 rounded-buttons w-full sm:w-auto text-center"
-              >
-                Download Resume
-              </Link>
-              <Link 
-                href="https://github.com/dushyant24bcon2017-collab" 
-                className="bg-midnight/50 backdrop-blur-sm text-parchment border border-ash font-body px-6 py-3.5 rounded-buttons hover:border-slate hover:bg-ash/50 transition-all duration-300 w-full sm:w-auto text-center"
-              >
-                View GitHub
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* 2. ABOUT SECTION */}
-        <section id="about" className="max-w-[1200px] mx-auto px-6 py-32 scroll-mt-20">
-          <h2 className="scroll-m-20 border-b border-ash/50 pb-2 text-3xl font-semibold tracking-tight first:mt-0 text-parchment mb-10 flex items-center gap-4">
-            <span className="text-slate font-mono text-sm tracking-widest uppercase">01 //</span> About
-          </h2>
-          <div className="text-slate text-lg leading-relaxed max-w-3xl space-y-6">
-            <p>
-              I am a second-year B.Tech Computer Science student at JECRC University, based in Jaipur. I specialize in building full-stack applications with a heavy focus on the PERN stack, TypeScript, Prisma ORM, Next.js.
-            </p>
-            <p>
-              For me, writing code is a lot like hitting an Upper/Lower split at the gym—it requires consistency, heavy lifting, and strict attention to the details. When I'm not architecting multi-tenant database schemas or debugging state management, I'm probably reading Books or running matches in EA FC.
-            </p>
-          </div>
-        </section>
-
-        {/* 3. EXPERIENCE SECTION */}
-        <section id="experience" className="max-w-[1200px] mx-auto px-6 py-32 scroll-mt-20">
-          <h2 className="scroll-m-20 border-b border-ash/50 pb-2 text-3xl font-semibold tracking-tight first:mt-0 text-parchment mb-12 flex items-center gap-4">
-            <span className="text-slate font-mono text-sm tracking-widest uppercase">02 //</span> Experience
-          </h2>
-          <div className="grid grid-cols-1 gap-8">
-            <div className="glass-card border border-ash/80 rounded-cards p-8 md:p-10 transition-all duration-300 hover:border-dough/50 group">
-              <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-6">
-                <div>
-                  <h3 className="scroll-m-20 text-xl font-semibold tracking-tight text-parchment flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-dough shadow-[0_0_8px_rgba(230,126,34,0.6)]"></span>
-                    Founder & Operations Lead
-                  </h3>
-                  <p className="text-slate font-body mt-2 text-base">The Dough House</p>
-                </div>
-                <p className="text-slate font-mono text-sm mt-4 md:mt-0 opacity-70">Aug 2025 - Present</p>
-              </div>
-              <p className="text-slate leading-relaxed max-w-3xl text-lg">
-              Launched and managed operations for an artisanal bakery brand, taking full ownership of product branding, organic
-content strategy, and driving initial salesDeveloped a lightweight digital storefront to establish an early online presence and facilitate basic customer orders.
+      <main className="pt-[56px] pb-[64px]">
+        {/* HERO SECTION */}
+        <section className="max-w-[960px] mx-auto px-6 pt-[96px] pb-[64px]">
+          <div className="grid md:grid-cols-[1fr_320px] gap-12 items-start">
+            <div className="flex flex-col max-w-[600px]">
+              <span className="font-mono uppercase text-[var(--color-legend-gray)] text-[12px] tracking-[0.08em] mb-[12px]">
+                ENGINEER — FULL-STACK / BACKEND FOCUSED
+              </span>
+              <h1 className="font-panelface font-medium text-[56px] leading-[1.08] tracking-[0.02em] text-[var(--color-ink)] mb-[16px]">
+                Dushyant Singh Rathore
+              </h1>
+              <p className="font-fieldwork font-normal text-[16px] leading-relaxed text-[var(--color-ink)] mb-[24px] max-w-[560px]">
+                Full-Stack Developer focused on Next.js & the PERN ecosystem. Architecting disciplined and scalable systems with modern tooling.
               </p>
+              <div className="font-mono text-[13px] text-[var(--color-legend-gray)] mb-[32px] flex items-center gap-2">
+                <span>B.TECH CSE</span>
+                <span>·</span>
+                <span>JAIPUR, IN</span>
+                <span>·</span>
+                <span>REV 2.0</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="https://drive.google.com/file/d/1H9jwn3A_bsfRPFyE4GUPwypLX_Or35Wo/view?usp=sharing"
+                  className="btn-primary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Download Résumé
+                </Link>
+                <Link
+                  href="https://github.com/dushyant24bcon2017-collab"
+                  className="btn-ghost"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GITHUB
+                </Link>
+              </div>
+            </div>
+
+            {/* Right column — the "decorative" slot from the design spec,
+                filled with a real interactive terminal instead of a static graphic */}
+            <div className="w-full">
+              <TerminalWidget />
             </div>
           </div>
         </section>
 
-        {/* 4. PROJECTS SECTION */}
-        <section id="projects" className="max-w-[1200px] mx-auto px-6 py-32 scroll-mt-20">
-          <h2 className="scroll-m-20 border-b border-ash/50 pb-2 text-3xl font-semibold tracking-tight first:mt-0 text-parchment mb-12 flex items-center gap-4">
-            <span className="text-slate font-mono text-sm tracking-widest uppercase">03 //</span> Projects
+        {/* ABOUT SECTION */}
+        <section id="about" className="max-w-[960px] mx-auto px-6 py-[48px]">
+          <h2 className="font-panelface font-bold text-[28px] uppercase tracking-[0.12em] text-[var(--color-ink)] border-b border-[var(--color-trace-gray)] pb-[12px] mb-[24px]">
+            Overview
           </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* PROJECT 1: API Gateway */}
-            <div className="glass-card border border-ash/80 rounded-cards p-8 md:p-10 flex flex-col h-full transition-all duration-300 hover:border-slate group hover:-translate-y-1">
-              <h3 className="scroll-m-20 text-xl font-semibold tracking-tight text-parchment mb-2 group-hover:text-dough transition-colors">
+          <div className="font-fieldwork text-[15px] text-[var(--color-ink)] leading-[1.6] max-w-[720px] space-y-4">
+            <p>
+              I am a third-year B.Tech Computer Science student at JECRC University, based in Jaipur. I specialize in building full-stack applications with a heavy focus on the PERN stack, TypeScript, Prisma ORM, and Next.js.
+            </p>
+            <p>
+              For me, writing code is a lot like hitting an Upper/Lower split at the gym — it requires consistency, heavy lifting, and strict attention to the details. When I'm not architecting database schemas or debugging state management, I'm reading books or running matches in Fifa.
+            </p>
+          </div>
+        </section>
+
+        {/* TIMELINE (EXPERIENCE) SECTION */}
+        <section id="timeline" className="max-w-[960px] mx-auto px-6 py-[48px]">
+          <h2 className="font-panelface font-bold text-[28px] uppercase tracking-[0.12em] text-[var(--color-ink)] border-b border-[var(--color-trace-gray)] pb-[12px] mb-[24px]">
+            Revision History
+          </h2>
+          <div className="w-full border border-[var(--color-trace-gray)] rounded-[2px] overflow-hidden">
+            {/* Table Header */}
+            <div className="grid grid-cols-[80px_140px_1fr] bg-[var(--color-substrate-deep)] border-b border-[var(--color-ink)] px-4 py-3 font-fieldwork font-semibold text-[13px] uppercase text-[var(--color-ink)]">
+              <div>Rev</div>
+              <div>Date</div>
+              <div>Description of Changes</div>
+            </div>
+            {/* Table Rows */}
+            <div className="grid grid-cols-[80px_140px_1fr] spec-table-row border-b border-[var(--color-trace-gray)] px-4 py-3 items-start">
+              <div className="font-mono text-[13px] text-[var(--color-solder-mask)]">v2.0</div>
+              <div className="font-mono text-[13px] text-[var(--color-legend-gray)]">Aug 2025 – Pres</div>
+              <div className="font-fieldwork text-[14px] text-[var(--color-ink)] leading-[1.5]">
+                <strong className="font-medium block mb-1">Founder &amp; Operations Lead, The Dough House</strong>
+                Launched operations for an artisanal bakery brand. Developed lightweight digital storefront, managed product branding, organic content strategy, and facilitated customer ordering systems.
+              </div>
+            </div>
+            <div className="grid grid-cols-[80px_140px_1fr] spec-table-row border-b border-[var(--color-trace-gray)] px-4 py-3 items-start">
+              <div className="font-mono text-[13px] text-[var(--color-solder-mask)]">v1.0</div>
+              <div className="font-mono text-[13px] text-[var(--color-legend-gray)]">2024 – 2028</div>
+              <div className="font-fieldwork text-[14px] text-[var(--color-ink)] leading-[1.5]">
+                <strong className="font-medium block mb-1">B.Tech CSE, JECRC University</strong>
+                Second-year student. Foundations in full-stack architecture, database management systems, and competitive problem solving.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* PROJECTS SECTION */}
+        <section id="components" className="max-w-[960px] mx-auto px-6 py-[48px]">
+          <h2 className="font-panelface font-bold text-[28px] uppercase tracking-[0.12em] text-[var(--color-ink)] border-b border-[var(--color-trace-gray)] pb-[12px] mb-[24px]">
+            Component Index
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* U1: API Gateway */}
+            <div className="component-card">
+              <div className="fiducial-tl"></div>
+              <div className="fiducial-tr"></div>
+              <div className="fiducial-bl"></div>
+              <div className="fiducial-br"></div>
+
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] mb-[16px]">U1</div>
+              <h3 className="font-fieldwork font-semibold text-[18px] text-[var(--color-ink)] mb-[8px]">
                 High-Concurrency API Gateway
               </h3>
-              
-              <div className="trace font-sans font-bold uppercase tracking-widest text-[0.7rem] mb-6 mt-2 bg-midnight/40 p-3 rounded-md border border-ash/50">
-                <span className="trace-node">ClientReq</span>
-                <span className="trace-arrow"></span>
-                <span className="trace-node text-dough">Redis.Lua</span>
-                <span className="trace-arrow"></span>
-                <span className="trace-node">ReverseProxy</span>
-              </div>
-              
-              <p className="text-slate flex-grow mb-8 text-lg leading-relaxed">
-                Engineered an API gateway for high concurrency. Integrated strict rate-limiting and API key verification utilizing Redis Lua scripts to ensure atomicity and eradicate race conditions, routed via HTTP-Proxy-Middleware.
+              <p className="font-fieldwork font-normal text-[15px] text-[var(--color-legend-gray)] leading-[1.5] mb-[16px] line-clamp-2">
+                API gateway with security , strict rate-limiting and atomicity utilizing Redis Lua scripts to eradicate race conditions.
               </p>
-              
-              <div className="hairline mb-6"></div>
-              
-              <div className="flex flex-wrap gap-3 mt-auto">
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">Redis</span>
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">Lua</span>
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">http-proxy-middleware</span>
+
+              <div className="flex items-center gap-2 mb-[16px]">
+                <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
+                <span className="font-mono text-[12px] text-[var(--color-ink)]">shipped</span>
+                <span className="font-mono text-[12px] text-[var(--color-legend-gray)] ml-auto">Redis · Lua · Proxy</span>
+              </div>
+
+              <div className="w-full h-[1px] bg-[var(--color-trace-gray)] my-[16px]"></div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Role</div>
+                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Backend Eng</div>
+                </div>
+                <div>
+                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Outcome</div>
+                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Zero Race Cond | High Latency | Security</div>
+                </div>
               </div>
             </div>
 
-            {/* PROJECT 2: Pagination Engine */}
-            <div className="glass-card border border-ash/80 rounded-cards p-8 md:p-10 flex flex-col h-full transition-all duration-300 hover:border-slate group hover:-translate-y-1">
-              <h3 className="scroll-m-20 text-xl font-semibold tracking-tight text-parchment mb-2 group-hover:text-dough transition-colors">
-                Tuple Cursor Pagination Engine
+            {/* U2: Pagination Engine */}
+            <div className="component-card">
+              <div className="fiducial-tl"></div>
+              <div className="fiducial-tr"></div>
+              <div className="fiducial-bl"></div>
+              <div className="fiducial-br"></div>
+
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] mb-[16px]">U2</div>
+              <h3 className="font-fieldwork font-semibold text-[18px] text-[var(--color-ink)] mb-[8px]">
+                Tuple Cursor Pagination
               </h3>
-              
-              <div className="trace font-sans font-bold uppercase tracking-widest text-[0.7rem] mb-6 mt-2 bg-midnight/40 p-3 rounded-md border border-ash/50">
-                <span className="trace-node">React UI</span>
-                <span className="trace-arrow"></span>
-                <span className="trace-node text-dough">Tuple Cursor</span>
-                <span className="trace-arrow"></span>
-                <span className="trace-node">Indexed DB</span>
-              </div>
-              
-              <p className="text-slate flex-grow mb-8 text-lg leading-relaxed">
-                A blazing-fast backend pagination engine utilizing tuple cursors and strategic database indexing for optimal data retrieval. Includes an automated seeding script and a lightweight React frontend to visualize data streams.
+              <p className="font-fieldwork font-normal text-[15px] text-[var(--color-legend-gray)] leading-[1.5] mb-[16px] line-clamp-2">
+                Blazing-fast backend engine utilizing tuple cursors and strategic DB indexing for optimal streaming.
               </p>
-              
-              <div className="hairline mb-6"></div>
 
-              <div className="flex flex-wrap gap-3 mt-auto">
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">PostgreSQL</span>
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">Node.js</span>
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">React</span>
+              <div className="flex items-center gap-2 mb-[16px]">
+                <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
+                <span className="font-mono text-[12px] text-[var(--color-ink)]">shipped</span>
+                <span className="font-mono text-[12px] text-[var(--color-legend-gray)] ml-auto">PostgreSQL · Node · React</span>
+              </div>
+
+              <div className="w-full h-[1px] bg-[var(--color-trace-gray)] my-[16px]"></div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Role</div>
+                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Backend Eng</div>
+                </div>
+                <div>
+                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Outcome</div>
+                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">O(1) Data Retrieval | Cursor Pagination |Seeding Script</div>
+                </div>
               </div>
             </div>
 
-            {/* PROJECT 3: Logistics Dashboard */}
-            <div className="glass-card border border-ash/80 rounded-cards p-8 md:p-10 flex flex-col h-full transition-all duration-300 hover:border-slate group hover:-translate-y-1">
-              <h3 className="scroll-m-20 text-xl font-semibold tracking-tight text-parchment mb-2 group-hover:text-dough transition-colors">
+            {/* U3: Logistics Dashboard */}
+            <div className="component-card">
+              <div className="fiducial-tl"></div>
+              <div className="fiducial-tr"></div>
+              <div className="fiducial-bl"></div>
+              <div className="fiducial-br"></div>
+
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] mb-[16px]">U3</div>
+              <h3 className="font-fieldwork font-semibold text-[18px] text-[var(--color-ink)] mb-[8px]">
                 Logistics Dashboard
               </h3>
-              
-              <div className="trace font-sans font-bold uppercase tracking-widest text-[0.7rem] mb-6 mt-2 bg-midnight/40 p-3 rounded-md border border-ash/50">
-                <span className="trace-node">Client</span>
-                <span className="trace-arrow"></span>
-                <span className="trace-node text-dough">Express.API</span>
-                <span className="trace-arrow"></span>
-                <span className="trace-node">PostgreSQL</span>
-              </div>
-
-              <p className="text-slate flex-grow mb-8 text-lg leading-relaxed">
-                A robust multi-tenant inventory and logistics management system designed for scale. Features complex relational schemas and secure role-based access.
+              <p className="font-fieldwork font-normal text-[15px] text-[var(--color-legend-gray)] leading-[1.5] mb-[16px] line-clamp-2">
+                Robust multi-tenant inventory management system with complex relational schemas and role-based access.
               </p>
 
-              <div className="hairline mb-6"></div>
+              <div className="flex items-center gap-2 mb-[16px]">
+                <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
+                <span className="font-mono text-[12px] text-[var(--color-ink)]">shipped</span>
+                <span className="font-mono text-[12px] text-[var(--color-legend-gray)] ml-auto">Express · Prisma</span>
+              </div>
 
-              <div className="flex flex-wrap gap-3 mt-auto">
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">Express.js</span>
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">TypeScript</span>
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">PostgreSQL</span>
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">Prisma</span>
+              <div className="w-full h-[1px] bg-[var(--color-trace-gray)] my-[16px]"></div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Role</div>
+                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Architecture</div>
+                </div>
+                <div>
+                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Outcome</div>
+                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Multi-Tenancy | RABC | Transaction Queries</div>
+                </div>
               </div>
             </div>
 
-            {/* PROJECT 4: AI Travel Planner */}
-            <div className="glass-card border border-ash/80 rounded-cards p-8 md:p-10 flex flex-col h-full transition-all duration-300 hover:border-slate group hover:-translate-y-1">
-              <h3 className="scroll-m-20 text-xl font-semibold tracking-tight text-parchment mb-2 group-hover:text-dough transition-colors">
+            {/* U4: AI Travel Planner */}
+            <div className="component-card">
+              <div className="fiducial-tl"></div>
+              <div className="fiducial-tr"></div>
+              <div className="fiducial-bl"></div>
+              <div className="fiducial-br"></div>
+
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] mb-[16px]">U4</div>
+              <h3 className="font-fieldwork font-semibold text-[18px] text-[var(--color-ink)] mb-[8px]">
                 AI Travel Planner
               </h3>
-              
-              <div className="trace font-sans font-bold uppercase tracking-widest text-[0.7rem] mb-6 mt-2 bg-midnight/40 p-3 rounded-md border border-ash/50">
-                <span className="trace-node">ClientReq</span>
-                <span className="trace-arrow"></span>
-                <span className="trace-node text-dough">Vercel AI</span>
-                <span className="trace-arrow"></span>
-                <span className="trace-node">Gemini API</span>
-              </div>
-
-              <p className="text-slate flex-grow mb-8 text-lg leading-relaxed">
-                An intelligent itinerary generator that creates customized travel plans on the fly using AI APIs and dynamic client-side rendering.
+              <p className="font-fieldwork font-normal text-[15px] text-[var(--color-legend-gray)] leading-[1.5] mb-[16px] line-clamp-2">
+                Intelligent itinerary generator utilizing Vercel AI SDK and Gemini for dynamic client-side rendering.
               </p>
 
-              <div className="hairline mb-6"></div>
+              <div className="flex items-center gap-2 mb-[16px]">
+                <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
+                <span className="font-mono text-[12px] text-[var(--color-ink)]">shipped</span>
+                <span className="font-mono text-[12px] text-[var(--color-legend-gray)] ml-auto">Next.js · Gemini</span>
+              </div>
 
-              <div className="flex flex-wrap gap-3 mt-auto">
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">Next.js</span>
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">Vercel AI SDK</span>
-                <span className="font-mono text-xs tracking-wider border border-ash text-parchment/80 bg-concrete/50 px-4 py-1.5 rounded-buttons">Gemini API</span>
+              <div className="w-full h-[1px] bg-[var(--color-trace-gray)] my-[16px]"></div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Role</div>
+                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Full-Stack</div>
+                </div>
+                <div>
+                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Outcome</div>
+                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">API Integration | Tool Calling | Vercel AI SDK</div>
+                </div>
               </div>
             </div>
-
           </div>
         </section>
 
-        {/* 5. SKILLS SECTION */}
-        <section id="skills" className="max-w-[1200px] mx-auto px-6 py-32 scroll-mt-20">
-          <h2 className="scroll-m-20 border-b border-ash/50 pb-2 text-3xl font-semibold tracking-tight first:mt-0 text-parchment mb-12 flex items-center gap-4">
-            <span className="text-slate font-mono text-sm tracking-widest uppercase">04 //</span> Technical Arsenal
+        {/* SKILLS SECTION */}
+        <section id="specs" className="max-w-[960px] mx-auto px-6 py-[48px]">
+          <h2 className="font-panelface font-bold text-[28px] uppercase tracking-[0.12em] text-[var(--color-ink)] border-b border-[var(--color-trace-gray)] pb-[12px] mb-[24px]">
+            Technical Parameters
           </h2>
-          <div className="flex flex-wrap gap-4 max-w-4xl">
-            {['TypeScript', 'JavaScript', 'Next.js', 'React', 'Node.js', 'Express', 'PostgreSQL', 'Redis', 'Prisma ORM', 'Tailwind CSS'].map((skill) => (
-              <div key={skill} className="glass-card border border-ash/80 rounded-buttons px-6 py-3 flex items-center gap-3 transition-transform hover:-translate-y-0.5">
-                {skill === 'PostgreSQL' || skill === 'Node.js' || skill === 'Redis' ? (
-                   <span className="w-1.5 h-1.5 rounded-full bg-supabase shadow-[0_0_6px_rgba(62,207,142,0.6)]"></span>
-                ) : null}
-                <span className="font-mono text-sm text-parchment tracking-wide">{skill}</span>
-              </div>
-            ))}
+
+          <div className="w-full border-t border-[var(--color-trace-gray)]">
+            {/* Header Row */}
+            <div className="grid grid-cols-3 px-4 py-2 border-b border-[var(--color-trace-gray)] font-fieldwork font-semibold text-[13px] uppercase text-[var(--color-ink)]">
+              <div>Parameter</div>
+              <div>Value</div>
+              <div>Notes</div>
+            </div>
+
+            {/* Data Rows */}
+            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
+              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Core Languages</div>
+              <div className="font-mono text-[13px] text-[var(--color-ink)]">TypeScript, JavaScript,Python</div>
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">ES6+ Standard</div>
+            </div>
+            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
+              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Frontend Stack</div>
+              <div className="font-mono text-[13px] text-[var(--color-ink)]">Next.js, React, Tailwind</div>
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">SSR / SSG</div>
+            </div>
+            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
+              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Backend Runtime</div>
+              <div className="font-mono text-[13px] text-[var(--color-ink)]">Node.js, Express</div>
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">REST APIs / Middleware</div>
+            </div>
+            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
+              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Database & Cache</div>
+              <div className="font-mono text-[13px] text-[var(--color-ink)]">PostgreSQL, Redis</div>
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">Relational / KV</div>
+            </div>
+            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
+              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Data Modeling</div>
+              <div className="font-mono text-[13px] text-[var(--color-ink)]">Prisma ORM</div>
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">Multi-tenant schemas</div>
+            </div>
           </div>
         </section>
 
-        {/* 6. CONTACT SECTION */}
-        <section id="contact" className="max-w-[1200px] mx-auto px-6 py-40 text-center relative flex flex-col items-center scroll-mt-20">
-          <h2 className="scroll-m-20 text-center text-4xl md:text-6xl font-extrabold tracking-tight text-balance text-parchment mb-8">
-            Let's Build Something.
-          </h2>
-          <p className="text-slate mb-6 max-w-md mx-auto text-lg leading-relaxed">
-            Currently open for new opportunities, freelance projects, or just a good discussion about system architecture.
-          </p>
-          <ContactButton />
+        {/* CONTACT SECTION */}
+        <section id="contact" className="max-w-[960px] mx-auto px-6 py-[64px] border-t border-[var(--color-trace-gray)] mt-[32px]">
+          <div className="flex flex-col items-start max-w-[600px]">
+            <span className="font-mono uppercase text-[var(--color-legend-gray)] text-[12px] tracking-[0.08em] mb-[12px]">
+              END OF DOCUMENT
+            </span>
+            <h2 className="font-panelface font-bold text-[36px] text-[var(--color-ink)] mb-[16px]">
+              Status: Receiving
+            </h2>
+            <p className="font-fieldwork text-[16px] text-[var(--color-ink)] leading-[1.6] mb-[24px]">
+              Available for system architecture discussions, scalable stack inquiries, or technical opportunities.
+            </p>
+            <ContactButton />
+          </div>
         </section>
-        
-        <footer className="py-10 text-center border-t border-ash/50 text-slate/60 font-mono text-sm tracking-wide bg-midnight/50 backdrop-blur-md">
-          <p>© {new Date().getFullYear()} Dushyant Singh Rathore. Architected with precision.</p>
-        </footer>
       </main>
+
+      {/* FOOTER */}
+      <footer className="w-full bg-[var(--color-ink)] text-[var(--color-substrate)] py-[32px] px-6 xl:px-0">
+        <div className="max-w-[960px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="font-mono text-[13px]">© {new Date().getFullYear()} Dushyant Singh Rathore</div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
+            <span className="font-mono text-[13px]">listening</span>
+          </div>
+        </div>
+      </footer>
     </>
   );
 }

@@ -1,117 +1,189 @@
 @import "tailwindcss";
- 
-@theme {
+
+/*
+  @theme inline resolves these refs at usage-time rather than at
+  parse-time, which is required when the underlying --font-* variables
+  are injected onto <html> by next/font (in layout.tsx) rather than
+  defined statically here. Using a plain @theme block for this causes
+  a circular/empty reference — that was the original bug.
+*/
+@theme inline {
+  --font-fieldwork: var(--font-fieldwork);
+  --font-panelface: var(--font-panelface);
+  --font-mono: var(--font-mono);
+}
+
+:root {
   /* Colors */
-  --color-midnight: #0a0a0a;
-  --color-concrete: #171717;
-  --color-ash: #262626;
-  --color-slate: #888888;
-  --color-parchment: #ededed;
-  --color-dough: #e67e22;
-  --color-supabase: #3ecf8e;
-  --color-wire: #5b7a99;
- 
-  /* Typography */
-  --font-display: var(--font-cormorant);
-  --font-body: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
- 
-  /* Border Radius */
-  --radius-cards: 12px;
-  --radius-buttons: 9999px;
+  --color-substrate: #f5f7f2;
+  --color-substrate-deep: #eceee7;
+  --color-trace-gray: #d7ddd2;
+  --color-grid-line: #b7c0b3;
+  --color-legend-gray: #5c6b60;
+  --color-ink: #121814;
+  --color-solder-mask: #0e7a4d;
+  --color-copper: #b5651d;
+  --color-test-point: #e8a33d;
+  --color-paper-white: #ffffff;
+
+  /* Shadows */
+  --shadow-lift: 0px 1px 0px 0px rgba(18, 24, 20, 0.08);
 }
- 
-body {
-  background-color: var(--color-midnight);
-  color: var(--color-parchment);
-  overflow-x: hidden;
-}
- 
-/* The Architect's Blueprint Grid */
-.blueprint-grid {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-image: 
-      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  z-index: -2;
-  pointer-events: none;
-}
- 
-/* Ambient Lighting / Gallery Spotlight */
-.ambient-glow {
-  position: fixed;
-  top: -20vh;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  height: 60vh;
-  background: radial-gradient(circle, rgba(230, 126, 34, 0.08) 0%, rgba(10, 10, 10, 0) 70%);
-  z-index: -1;
-  pointer-events: none;
-}
- 
-/* Elevated Card Styling */
-.glass-card {
-  background: linear-gradient(180deg, rgba(23, 23, 23, 0.8) 0%, rgba(10, 10, 10, 0.95) 100%);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
- 
-/* Button Glow Effects */
-.glow-button {
-  transition: all 0.3s ease;
-}
-.glow-button:hover {
-  box-shadow: 0 0 20px rgba(230, 126, 34, 0.3);
-  transform: translateY(-1px);
-}
- 
-/* Schematic Trace — the signature element for project cards.
-   Renders a tiny pipeline diagram of the actual mechanism. */
-.trace {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.02em;
-  line-height: 1.7;
-}
-.trace-node {
-  color: var(--color-wire);
-  white-space: nowrap;
-}
-.trace-arrow {
-  color: var(--color-ash);
-  margin: 0 0.5rem;
-}
-.trace-arrow::before {
-  content: "→";
-}
- 
-/* Hairline divider used inside cards to separate narrative from mechanism */
-.hairline {
-  height: 1px;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.08), transparent);
-}
- 
-/* Keep keyboard focus visible without disturbing the visual language */
-a:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--color-dough);
-  outline-offset: 3px;
-  border-radius: 4px;
-}
- 
-@media (prefers-reduced-motion: reduce) {
+
+@layer base {
   * {
-    animation-duration: 0.001ms !important;
-    transition-duration: 0.001ms !important;
+    border-color: var(--color-trace-gray);
   }
+
+  body {
+    background-color: var(--color-substrate);
+    color: var(--color-ink);
+    font-family: var(--font-fieldwork);
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+  }
+
+  /* Blueprint grid — a 32px trace grid fading out from top-center, the
+     drafting-table backdrop a datasheet is drawn on. Fixed + z-index -1
+     so it sits behind all content without affecting layout flow. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(var(--color-trace-gray) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-trace-gray) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: 0.9;
+    -webkit-mask-image: radial-gradient(ellipse 80% 130% at 50% 0%, black 45%, transparent 100%);
+    mask-image: radial-gradient(ellipse 80% 130% at 50% 0%, black 45%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* Every 4th line drawn heavier, like index lines on graph paper —
+     reinforces the grid without raising the base opacity further. */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(var(--color-grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid-line) 1px, transparent 1px);
+    background-size: 128px 128px;
+  opacity: 0.7;
+
+-webkit-mask-image: radial-gradient(ellipse 30% 80% at 50% 0%, black 10%, transparent 100%);
+mask-image: radial-gradient(ellipse 30% 80% at 50% 0%, black 10%, transparent 100%);
+pointer-events: none;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-panelface);
+    color: var(--color-ink);
+  }
+
+  ::selection {
+    background-color: var(--color-solder-mask);
+    color: var(--color-substrate);
+  }
+
+  /* Visible keyboard focus everywhere — required by spec's quality floor */
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--color-solder-mask);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Respect reduced-motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Scanning-reticle logomark — reuses the fiducial-bracket motif from
+   component cards as the nav brand mark, with a sweep line that scans
+   top-to-bottom like an oscilloscope trigger sweep. */
+@keyframes scan-sweep {
+  0% { transform: translateY(0); opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translateY(21px); opacity: 0; }
+}
+
+@keyframes scan-breathe {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.scan-sweep {
+  animation: scan-sweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.scan-bracket {
+  animation: scan-breathe 2.2s ease-in-out infinite;
+}
+
+@layer components {
+  /* Typography utilities */
+  .font-panelface { font-family: var(--font-panelface); }
+  .font-fieldwork { font-family: var(--font-fieldwork); }
+  .font-mono { font-family: var(--font-mono); }
+
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center font-fieldwork font-medium text-[14px] transition-colors duration-200 cursor-pointer;
+    background-color: var(--color-ink);
+    color: var(--color-substrate);
+    border-radius: 2px;
+    padding: 10px 18px;
+    box-shadow: var(--shadow-lift);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-solder-mask);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center font-fieldwork font-medium text-[14px] transition-colors duration-200 cursor-pointer bg-transparent;
+    color: var(--color-ink);
+    border: 1px solid var(--color-trace-gray);
+    border-radius: 2px;
+    padding: 10px 16px;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--color-solder-mask);
+    color: var(--color-solder-mask);
+  }
+
+  /* Component Card */
+  .component-card {
+    @apply relative bg-[var(--color-paper-white)] border border-[var(--color-trace-gray)] p-5 transition-colors duration-300 flex flex-col h-full;
+    border-radius: 2px;
+  }
+
+  .component-card:hover {
+    border-color: var(--color-solder-mask);
+  }
+
+  /* Fiducial markers — inset 6px so they read as alignment marks
+     rather than colliding with card padding/content on small cards */
+  .fiducial-tl { @apply absolute top-[6px] left-[6px] w-[8px] h-[8px] border-t border-l border-[var(--color-trace-gray)] pointer-events-none; }
+  .fiducial-tr { @apply absolute top-[6px] right-[6px] w-[8px] h-[8px] border-t border-r border-[var(--color-trace-gray)] pointer-events-none; }
+  .fiducial-bl { @apply absolute bottom-[6px] left-[6px] w-[8px] h-[8px] border-b border-l border-[var(--color-trace-gray)] pointer-events-none; }
+  .fiducial-br { @apply absolute bottom-[6px] right-[6px] w-[8px] h-[8px] border-b border-r border-[var(--color-trace-gray)] pointer-events-none; }
+
+  /* Table stripes */
+  .spec-table-row:nth-child(even) { background-color: var(--color-substrate-deep); }
+  .spec-table-row:nth-child(odd) { background-color: var(--color-substrate); }
 }
