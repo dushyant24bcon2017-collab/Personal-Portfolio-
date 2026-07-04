@@ -3,8 +3,137 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-// Interactive terminal — "session.log". A printed listing you can type into,
-// not an OS-window imitation, per the Terminal Snippet Block spec.
+// -------------------------------------------------------------
+// MICRO-INTERACTION: MAGNETIC WRAPPER
+// -------------------------------------------------------------
+function MagneticWrapper({ children, className = "" }: { children: React.ReactNode, className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (ref.current) {
+      const { left, top, width, height } = ref.current.getBoundingClientRect();
+      // 0.4 controls the strength of the magnetic pull
+      const x = (e.clientX - (left + width / 2)) * 0.4;
+      const y = (e.clientY - (top + height / 2)) * 0.4;
+      setPosition({ x, y });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setPosition({ x: 0, y: 0 });
+  };
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className={`inline-block ${className}`}
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        transition: position.x === 0 ? "transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)" : "transform 0.1s ease-out"
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// MICRO-INTERACTION: CRYPTOGRAPHIC SCROLL REVEAL
+// -------------------------------------------------------------
+function CryptoReveal({ text }: { text: string }) {
+  const [displayText, setDisplayText] = useState("");
+  const [hasRevealed, setHasRevealed] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  const chars = "0123456789ABCDEF!<>-_\\\\/[]{}—=+*^?#_";
+
+  useEffect(() => {
+    // Generate initial scrambled hash of the same length
+    setDisplayText(text.split("").map(c => c === " " ? " " : chars[Math.floor(Math.random() * 16)]).join(""));
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasRevealed) {
+          setHasRevealed(true);
+        }
+      },
+      { threshold: 0.2 } // Trigger when 20% of the element is visible
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [hasRevealed, text]);
+
+  useEffect(() => {
+    if (!hasRevealed) return;
+
+    let iterations = 0;
+    const interval = setInterval(() => {
+      setDisplayText((prev) =>
+        text
+          .split("")
+          .map((char, index) => {
+            if (index < iterations) return char;
+            if (char === " ") return " ";
+            return chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join("")
+      );
+
+      if (iterations >= text.length) clearInterval(interval);
+      iterations += 1/2; // The lower the denominator, the faster it decrypts
+    }, 30);
+
+    return () => clearInterval(interval);
+  }, [hasRevealed, text]);
+
+  return <span ref={ref} className="inline-block">{displayText}</span>;
+}
+
+
+// -------------------------------------------------------------
+// MICRO-INTERACTION: GLITCH NAV LINK
+// -------------------------------------------------------------
+function GlitchNavLink({ href, children, onClick, isMobile }: { href: string; children: string; onClick?: () => void; isMobile?: boolean }) {
+  const [text, setText] = useState(children);
+  const originalText = children;
+  const chars = "!<>-_\\\\/[]{}—=+*^?#_";
+
+  const handleMouseEnter = () => {
+    let iterations = 0;
+    const interval = setInterval(() => {
+      setText(
+        originalText
+          .split("")
+          .map((letter, index) => {
+            if (index < iterations) return originalText[index];
+            return chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join("")
+      );
+
+      if (iterations >= originalText.length) clearInterval(interval);
+      iterations += 1;
+    }, 30);
+  };
+
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      onMouseEnter={handleMouseEnter}
+      className={`font-fieldwork font-medium text-[14px] uppercase tracking-[0.04em] text-[var(--color-ink)] hover:text-[var(--color-solder-mask)] transition-colors ${
+        isMobile ? "w-full pb-2 border-b border-[var(--color-trace-gray)]" : ""
+      }`}
+    >
+      {text}
+    </Link>
+  );
+}
+
+// Interactive terminal — "session.log". A printed listing you can type into.
 function TerminalWidget() {
   type Line = { type: "input" | "output"; text: string };
 
@@ -119,7 +248,9 @@ function TerminalWidget() {
   );
 }
 
-// Contact Button designed to spec: single fill color, lift shadow, solder-mask hover
+// -------------------------------------------------------------
+// MICRO-INTERACTION: SATISFYING CONTACT COPY
+// -------------------------------------------------------------
 function ContactButton() {
   const [showNotification, setShowNotification] = useState(false);
   const email = "dushyant.24bcon2017@jecrcu.edu.in";
@@ -129,7 +260,6 @@ function ContactButton() {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(email);
       } else {
-        // Fallback for non-secure contexts (some http hosts, older browsers)
         const el = document.createElement("textarea");
         el.value = email;
         el.style.position = "fixed";
@@ -147,22 +277,31 @@ function ContactButton() {
   };
 
   return (
-    <div className="relative inline-flex flex-col items-start mt-6">
-      <div
-        role="status"
-        aria-live="polite"
-        className={`absolute -top-12 left-0 bg-[var(--color-substrate-deep)] border border-[var(--color-trace-gray)] text-[var(--color-ink)] font-mono text-[12px] py-1.5 px-3 transition-all duration-200 pointer-events-none rounded-[2px] ${
-          showNotification ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
-        }`}
-      >
-        [EMAIL_COPIED_TO_CLIPBOARD]
+    <MagneticWrapper className="mt-6 z-10">
+      <div className="relative inline-flex flex-col items-start">
+        <div
+          role="status"
+          aria-live="polite"
+          className={`absolute -top-12 left-0 font-mono text-[12px] py-1.5 px-3 transition-all duration-300 pointer-events-none rounded-[2px] whitespace-nowrap ${
+            showNotification
+              ? "opacity-100 translate-y-0 bg-[#0a0a0a] text-[#00ff41] border border-[#00ff41] shadow-[0_0_12px_rgba(0,255,65,0.25)]"
+              : "opacity-0 translate-y-2 bg-[var(--color-substrate-deep)] border border-[var(--color-trace-gray)] text-[var(--color-ink)]"
+          }`}
+        >
+          {showNotification ? "[HTTP 201 : EMAIL COPIED TO CLIPBOARD]" : "[IDLE]"}
+        </div>
+        <button 
+          onClick={handleCopy} 
+          className="btn-primary active:scale-[0.96] active:translate-y-[2px] transition-all" 
+          aria-label={`Copy email address ${email}`}
+        >
+          Initialize Contact
+        </button>
       </div>
-      <button onClick={handleCopy} className="btn-primary" aria-label={`Copy email address ${email}`}>
-        Initialize Contact
-      </button>
-    </div>
+    </MagneticWrapper>
   );
 }
+
 function Typewriter() {
   const phrases = [
     "Full-Stack Developer focused on Next.js & the PERN ecosystem.",
@@ -177,19 +316,15 @@ function Typewriter() {
 
   useEffect(() => {
     const currentPhrase = phrases[phraseIndex];
-    // Deleting is usually faster than typing for a better feel
     const typeSpeed = isDeleting ? 30 : 60; 
 
     const timeout = setTimeout(() => {
       if (!isDeleting && text === currentPhrase) {
-        // Pause when the phrase is fully typed out
         setTimeout(() => setIsDeleting(true), 1500);
       } else if (isDeleting && text === "") {
-        // Move to the next phrase once fully deleted
         setIsDeleting(false);
         setPhraseIndex((prev) => (prev + 1) % phrases.length);
       } else {
-        // Add or remove a character
         setText(currentPhrase.substring(0, text.length + (isDeleting ? -1 : 1)));
       }
     }, typeSpeed);
@@ -198,19 +333,13 @@ function Typewriter() {
   }, [text, isDeleting, phraseIndex]);
 
   return (
-    // min-h-[48px] prevents the page layout from jumping up and down when the text wraps to two lines or deletes completely
     <p className="font-fieldwork font-normal text-[16px] leading-relaxed text-[var(--color-ink)] mb-[24px] max-w-[560px] min-h-[48px]">
       {text}
       <span className="inline-block w-[8px] h-[15px] bg-[var(--color-solder-mask)] ml-[4px] animate-pulse align-middle"></span>
     </p>
   );
 }
-// Scanning-reticle logomark. Same corner-bracket language as the
-// Component Index cards, animated with a sweep line — the site's one
-// dynamic brand mark, used exactly once so it stays a signature.
-// Scanning-reticle logomark. Same corner-bracket language as the
-// Component Index cards, animated with a sweep line — the site's one
-// dynamic brand mark, used exactly once so it stays a signature.
+
 function ScanningMark() {
   return (
     <span className="relative inline-flex h-[22px] w-[22px] shrink-0" aria-hidden="true">
@@ -232,12 +361,126 @@ function ScanningMark() {
   );
 }
 
+// -------------------------------------------------------------
+// MICRO-INTERACTION: "COMPILING..." PROJECT CARDS
+// -------------------------------------------------------------
+function ProjectCard({
+  id,
+  title,
+  description,
+  status,
+  tech,
+  role,
+  outcome
+}: {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  tech: string;
+  role: string;
+  outcome: string;
+}) {
+  const [isCompiling, setIsCompiling] = useState(false);
+
+  const handleMouseEnter = () => {
+    setIsCompiling(true);
+    setTimeout(() => setIsCompiling(false), 300); // 300ms compile time
+  };
+
+  return (
+    <div
+      className="component-card group transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(14,122,77,0.08)] cursor-crosshair relative overflow-hidden h-full"
+      onMouseEnter={handleMouseEnter}
+    >
+      <div className="fiducial-tl"></div>
+      <div className="fiducial-tr"></div>
+      <div className="fiducial-bl"></div>
+      <div className="fiducial-br"></div>
+
+      {isCompiling ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--color-paper-white)] text-[var(--color-solder-mask)] font-mono text-[13px]">
+          <span className="animate-pulse">_[Fetching {id}...]</span>
+        </div>
+      ) : (
+        <div className="flex flex-col h-full opacity-100 transition-opacity duration-200">
+          <div className="font-mono text-[12px] text-[var(--color-legend-gray)] mb-[16px]">{id}</div>
+          <h3 className="font-fieldwork font-semibold text-[18px] text-[var(--color-ink)] mb-[8px]">
+            {title}
+          </h3>
+          <p className="font-fieldwork font-normal text-[15px] text-[var(--color-legend-gray)] leading-[1.5] mb-[16px] line-clamp-2">
+            {description}
+          </p>
+
+          <div className="flex items-center gap-2 mb-[16px] mt-auto">
+            <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
+            <span className="font-mono text-[12px] text-[var(--color-ink)]">{status}</span>
+            <span className="font-mono text-[12px] text-[var(--color-legend-gray)] ml-auto">{tech}</span>
+          </div>
+
+          <div className="w-full h-[1px] bg-[var(--color-trace-gray)] my-[16px]"></div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Role</div>
+              <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">{role}</div>
+            </div>
+            <div>
+              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Outcome</div>
+              <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">{outcome}</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLinkClick = () => setIsMobileMenuOpen(false);
 
   const navItems = ["About", "Timeline", "Components", "Specs"];
+
+  const projects = [
+    {
+      id: "U1",
+      title: "High-Concurrency API Gateway",
+      description: "API gateway with security, strict rate-limiting and atomicity utilizing Redis Lua scripts to eradicate race conditions.",
+      status: "shipped",
+      tech: "Redis · Lua · Proxy",
+      role: "Backend Eng",
+      outcome: "Zero Race Cond | High Latency | Security"
+    },
+    {
+      id: "U2",
+      title: "Tuple Cursor Pagination",
+      description: "Blazing-fast backend engine utilizing tuple cursors and strategic DB indexing for optimal streaming.",
+      status: "shipped",
+      tech: "PostgreSQL · Node · React",
+      role: "Backend Eng",
+      outcome: "O(1) Data Retrieval | Cursor Pagination | Seeding Script"
+    },
+    {
+      id: "U3",
+      title: "Logistics Dashboard",
+      description: "Robust multi-tenant inventory management system with complex relational schemas and role-based access.",
+      status: "shipped",
+      tech: "Express · Prisma",
+      role: "Architecture",
+      outcome: "Multi-Tenancy | RABC | Transaction Queries"
+    },
+    {
+      id: "U4",
+      title: "AI Travel Planner",
+      description: "Intelligent itinerary generator utilizing Vercel AI SDK and Gemini for dynamic client-side rendering.",
+      status: "shipped",
+      tech: "Next.js · Gemini",
+      role: "Full-Stack",
+      outcome: "API Integration | Tool Calling | Vercel AI SDK"
+    }
+  ];
 
   return (
     <>
@@ -256,20 +499,15 @@ export default function Home() {
 
           <div className="hidden md:flex items-center gap-[24px]">
             {navItems.map((item) => (
-              <Link
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="font-fieldwork font-medium text-[14px] uppercase tracking-[0.04em] text-[var(--color-ink)] hover:text-[var(--color-solder-mask)] transition-colors"
-              >
+              <GlitchNavLink key={item} href={`#${item.toLowerCase()}`}>
                 {item}
-              </Link>
+              </GlitchNavLink>
             ))}
             <Link href="#contact" className="btn-ghost ml-2">
               Contact
             </Link>
           </div>
 
-          {/* Mobile Menu Toggle */}
           <button
             className="md:hidden text-[var(--color-ink)]"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -291,7 +529,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Mobile Dropdown */}
         <div
           className={`md:hidden absolute top-[56px] left-0 w-full bg-[var(--color-substrate-deep)] border-b border-[var(--color-trace-gray)] transition-all duration-200 overflow-hidden ${
             isMobileMenuOpen ? "max-h-[300px] border-b opacity-100" : "max-h-0 border-transparent opacity-0"
@@ -299,14 +536,9 @@ export default function Home() {
         >
           <div className="flex flex-col items-start p-6 gap-4">
             {navItems.map((item) => (
-              <Link
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                onClick={handleLinkClick}
-                className="font-fieldwork font-medium text-[14px] uppercase tracking-[0.04em] text-[var(--color-ink)] w-full pb-2 border-b border-[var(--color-trace-gray)]"
-              >
+              <GlitchNavLink key={item} href={`#${item.toLowerCase()}`} onClick={handleLinkClick} isMobile>
                 {item}
-              </Link>
+              </GlitchNavLink>
             ))}
           </div>
         </div>
@@ -332,27 +564,29 @@ export default function Home() {
                 <span>REV 2.0</span>
               </div>
               <div className="flex items-center gap-4">
-                <Link
-                  href="https://drive.google.com/file/d/1H9jwn3A_bsfRPFyE4GUPwypLX_Or35Wo/view?usp=sharing"
-                  className="btn-primary"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Download Résumé
-                </Link>
-                <Link
-                  href="https://github.com/dushyant24bcon2017-collab"
-                  className="btn-ghost"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  GITHUB
-                </Link>
+                <MagneticWrapper>
+                  <Link
+                    href="https://drive.google.com/file/d/1H9jwn3A_bsfRPFyE4GUPwypLX_Or35Wo/view?usp=sharing"
+                    className="btn-primary"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Download Résumé
+                  </Link>
+                </MagneticWrapper>
+                <MagneticWrapper>
+                  <Link
+                    href="https://github.com/dushyant24bcon2017-collab"
+                    className="btn-ghost"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GITHUB
+                  </Link>
+                </MagneticWrapper>
               </div>
             </div>
 
-            {/* Right column — the "decorative" slot from the design spec,
-                filled with a real interactive terminal instead of a static graphic */}
             <div className="w-full">
               <TerminalWidget />
             </div>
@@ -369,7 +603,12 @@ export default function Home() {
               I am a third-year B.Tech Computer Science student at JECRC University, based in Jaipur. I specialize in building full-stack applications with a heavy focus on the PERN stack, TypeScript, Prisma ORM, and Next.js.
             </p>
             <p>
-              For me, writing code is a lot like hitting an Upper/Lower split at the gym — it requires consistency, heavy lifting, and strict attention to the details. When I'm not architecting database schemas or debugging state management, I'm reading books or running matches in Fifa.
+              For me, writing code is a lot like hitting an Upper/Lower split at the gym — it requires consistency,{" "}
+              <span className="inline-flex items-center gap-1 border-b border-dashed border-[var(--color-legend-gray)] cursor-help group transition-all duration-300 hover:font-[900] hover:text-[var(--color-solder-mask)]">
+                heavy lifting
+                <span className="hidden group-hover:inline-block animate-bounce text-[16px] origin-bottom">🏋️‍♂️</span>
+              </span>
+              , and strict attention to the details. When I'm not architecting database schemas or debugging state management, I'm reading books or running matches in Fifa.
             </p>
           </div>
         </section>
@@ -380,24 +619,22 @@ export default function Home() {
             Revision History
           </h2>
           <div className="w-full border border-[var(--color-trace-gray)] rounded-[2px] overflow-hidden">
-            {/* Table Header */}
             <div className="grid grid-cols-[80px_140px_1fr] bg-[var(--color-substrate-deep)] border-b border-[var(--color-ink)] px-4 py-3 font-fieldwork font-semibold text-[13px] uppercase text-[var(--color-ink)]">
               <div>Rev</div>
               <div>Date</div>
               <div>Description of Changes</div>
             </div>
-            {/* Table Rows */}
             <div className="grid grid-cols-[80px_140px_1fr] spec-table-row border-b border-[var(--color-trace-gray)] px-4 py-3 items-start">
-              <div className="font-mono text-[13px] text-[var(--color-solder-mask)]">v2.0</div>
-              <div className="font-mono text-[13px] text-[var(--color-legend-gray)]">Aug 2025 – Pres</div>
+              <div className="font-mono text-[13px] text-[var(--color-solder-mask)]"><CryptoReveal text="v2.0" /></div>
+              <div className="font-mono text-[13px] text-[var(--color-legend-gray)]"><CryptoReveal text="Aug 2025 – Pres" /></div>
               <div className="font-fieldwork text-[14px] text-[var(--color-ink)] leading-[1.5]">
                 <strong className="font-medium block mb-1">Founder &amp; Operations Lead, The Dough House</strong>
                 Launched operations for an artisanal bakery brand. Developed lightweight digital storefront, managed product branding, organic content strategy, and facilitated customer ordering systems.
               </div>
             </div>
             <div className="grid grid-cols-[80px_140px_1fr] spec-table-row border-b border-[var(--color-trace-gray)] px-4 py-3 items-start">
-              <div className="font-mono text-[13px] text-[var(--color-solder-mask)]">v1.0</div>
-              <div className="font-mono text-[13px] text-[var(--color-legend-gray)]">2024 – 2028</div>
+              <div className="font-mono text-[13px] text-[var(--color-solder-mask)]"><CryptoReveal text="v1.0" /></div>
+              <div className="font-mono text-[13px] text-[var(--color-legend-gray)]"><CryptoReveal text="2024 – 2028" /></div>
               <div className="font-fieldwork text-[14px] text-[var(--color-ink)] leading-[1.5]">
                 <strong className="font-medium block mb-1">B.Tech CSE, JECRC University</strong>
                 Second-year student. Foundations in full-stack architecture, database management systems, and competitive problem solving.
@@ -413,145 +650,9 @@ export default function Home() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* U1: API Gateway */}
-            <div className="component-card">
-              <div className="fiducial-tl"></div>
-              <div className="fiducial-tr"></div>
-              <div className="fiducial-bl"></div>
-              <div className="fiducial-br"></div>
-
-              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] mb-[16px]">U1</div>
-              <h3 className="font-fieldwork font-semibold text-[18px] text-[var(--color-ink)] mb-[8px]">
-                High-Concurrency API Gateway
-              </h3>
-              <p className="font-fieldwork font-normal text-[15px] text-[var(--color-legend-gray)] leading-[1.5] mb-[16px] line-clamp-2">
-                API gateway with security , strict rate-limiting and atomicity utilizing Redis Lua scripts to eradicate race conditions.
-              </p>
-
-              <div className="flex items-center gap-2 mb-[16px]">
-                <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
-                <span className="font-mono text-[12px] text-[var(--color-ink)]">shipped</span>
-                <span className="font-mono text-[12px] text-[var(--color-legend-gray)] ml-auto">Redis · Lua · Proxy</span>
-              </div>
-
-              <div className="w-full h-[1px] bg-[var(--color-trace-gray)] my-[16px]"></div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Role</div>
-                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Backend Eng</div>
-                </div>
-                <div>
-                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Outcome</div>
-                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Zero Race Cond | High Latency | Security</div>
-                </div>
-              </div>
-            </div>
-
-            {/* U2: Pagination Engine */}
-            <div className="component-card">
-              <div className="fiducial-tl"></div>
-              <div className="fiducial-tr"></div>
-              <div className="fiducial-bl"></div>
-              <div className="fiducial-br"></div>
-
-              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] mb-[16px]">U2</div>
-              <h3 className="font-fieldwork font-semibold text-[18px] text-[var(--color-ink)] mb-[8px]">
-                Tuple Cursor Pagination
-              </h3>
-              <p className="font-fieldwork font-normal text-[15px] text-[var(--color-legend-gray)] leading-[1.5] mb-[16px] line-clamp-2">
-                Blazing-fast backend engine utilizing tuple cursors and strategic DB indexing for optimal streaming.
-              </p>
-
-              <div className="flex items-center gap-2 mb-[16px]">
-                <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
-                <span className="font-mono text-[12px] text-[var(--color-ink)]">shipped</span>
-                <span className="font-mono text-[12px] text-[var(--color-legend-gray)] ml-auto">PostgreSQL · Node · React</span>
-              </div>
-
-              <div className="w-full h-[1px] bg-[var(--color-trace-gray)] my-[16px]"></div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Role</div>
-                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Backend Eng</div>
-                </div>
-                <div>
-                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Outcome</div>
-                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">O(1) Data Retrieval | Cursor Pagination |Seeding Script</div>
-                </div>
-              </div>
-            </div>
-
-            {/* U3: Logistics Dashboard */}
-            <div className="component-card">
-              <div className="fiducial-tl"></div>
-              <div className="fiducial-tr"></div>
-              <div className="fiducial-bl"></div>
-              <div className="fiducial-br"></div>
-
-              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] mb-[16px]">U3</div>
-              <h3 className="font-fieldwork font-semibold text-[18px] text-[var(--color-ink)] mb-[8px]">
-                Logistics Dashboard
-              </h3>
-              <p className="font-fieldwork font-normal text-[15px] text-[var(--color-legend-gray)] leading-[1.5] mb-[16px] line-clamp-2">
-                Robust multi-tenant inventory management system with complex relational schemas and role-based access.
-              </p>
-
-              <div className="flex items-center gap-2 mb-[16px]">
-                <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
-                <span className="font-mono text-[12px] text-[var(--color-ink)]">shipped</span>
-                <span className="font-mono text-[12px] text-[var(--color-legend-gray)] ml-auto">Express · Prisma</span>
-              </div>
-
-              <div className="w-full h-[1px] bg-[var(--color-trace-gray)] my-[16px]"></div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Role</div>
-                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Architecture</div>
-                </div>
-                <div>
-                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Outcome</div>
-                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Multi-Tenancy | RABC | Transaction Queries</div>
-                </div>
-              </div>
-            </div>
-
-            {/* U4: AI Travel Planner */}
-            <div className="component-card">
-              <div className="fiducial-tl"></div>
-              <div className="fiducial-tr"></div>
-              <div className="fiducial-bl"></div>
-              <div className="fiducial-br"></div>
-
-              <div className="font-mono text-[12px] text-[var(--color-legend-gray)] mb-[16px]">U4</div>
-              <h3 className="font-fieldwork font-semibold text-[18px] text-[var(--color-ink)] mb-[8px]">
-                AI Travel Planner
-              </h3>
-              <p className="font-fieldwork font-normal text-[15px] text-[var(--color-legend-gray)] leading-[1.5] mb-[16px] line-clamp-2">
-                Intelligent itinerary generator utilizing Vercel AI SDK and Gemini for dynamic client-side rendering.
-              </p>
-
-              <div className="flex items-center gap-2 mb-[16px]">
-                <span className="inline-block w-[6px] h-[6px] rounded-full bg-[var(--color-solder-mask)]"></span>
-                <span className="font-mono text-[12px] text-[var(--color-ink)]">shipped</span>
-                <span className="font-mono text-[12px] text-[var(--color-legend-gray)] ml-auto">Next.js · Gemini</span>
-              </div>
-
-              <div className="w-full h-[1px] bg-[var(--color-trace-gray)] my-[16px]"></div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Role</div>
-                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">Full-Stack</div>
-                </div>
-                <div>
-                  <div className="font-mono text-[12px] text-[var(--color-legend-gray)] uppercase">Outcome</div>
-                  <div className="font-mono text-[13px] text-[var(--color-ink)] mt-1">API Integration | Tool Calling | Vercel AI SDK</div>
-                </div>
-              </div>
-            </div>
+            {projects.map((project) => (
+              <ProjectCard key={project.id} {...project} />
+            ))}
           </div>
         </section>
 
@@ -562,39 +663,35 @@ export default function Home() {
           </h2>
 
           <div className="w-full border-t border-[var(--color-trace-gray)]">
-            {/* Header Row */}
             <div className="grid grid-cols-3 px-4 py-2 border-b border-[var(--color-trace-gray)] font-fieldwork font-semibold text-[13px] uppercase text-[var(--color-ink)]">
               <div>Parameter</div>
               <div>Value</div>
               <div>Notes</div>
             </div>
 
-            {/* Data Rows */}
-            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
-              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Core Languages</div>
-              <div className="font-mono text-[13px] text-[var(--color-ink)]">TypeScript, JavaScript,Python</div>
-              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">ES6+ Standard</div>
-            </div>
-            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
-              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Frontend Stack</div>
-              <div className="font-mono text-[13px] text-[var(--color-ink)]">Next.js, React, Tailwind</div>
-              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">SSR / SSG</div>
-            </div>
-            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
-              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Backend Runtime</div>
-              <div className="font-mono text-[13px] text-[var(--color-ink)]">Node.js, Express</div>
-              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">REST APIs / Middleware</div>
-            </div>
-            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
-              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Database & Cache</div>
-              <div className="font-mono text-[13px] text-[var(--color-ink)]">PostgreSQL, Redis</div>
-              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">Relational / KV</div>
-            </div>
-            <div className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center">
-              <div className="font-fieldwork text-[14px] text-[var(--color-ink)]">Data Modeling</div>
-              <div className="font-mono text-[13px] text-[var(--color-ink)]">Prisma ORM</div>
-              <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">Multi-tenant schemas</div>
-            </div>
+            {[
+              { p: "Core Languages", v: "TypeScript, JavaScript, Python", n: "ES6+ Standard" },
+              { p: "Frontend Stack", v: "Next.js, React, Tailwind", n: "SSR / SSG" },
+              { p: "Backend Runtime", v: "Node.js, Express", n: "REST APIs / Middleware" },
+              { p: "Database & Cache", v: "PostgreSQL, Redis", n: "Relational / KV" },
+              { p: "Data Modeling", v: "Prisma ORM", n: "Multi-tenant schemas" }
+            ].map((row, i) => (
+              <div key={i} className="grid grid-cols-3 px-4 py-2.5 border-b border-[var(--color-trace-gray)] spec-table-row items-center group cursor-crosshair">
+                <div>
+                  <div className="font-fieldwork text-[14px] text-[var(--color-ink)] relative inline-flex items-center group-hover:text-[var(--color-solder-mask)] transition-colors duration-200 ml-4">
+                    <span className="absolute -left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-mono text-[var(--color-solder-mask)]">&gt;</span>
+                    <CryptoReveal text={row.p} />
+                    <span className="absolute -right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-mono text-[var(--color-solder-mask)]">&lt;</span>
+                  </div>
+                </div>
+                <div className="font-mono text-[13px] text-[var(--color-ink)]">
+                  <CryptoReveal text={row.v} />
+                </div>
+                <div className="font-mono text-[12px] text-[var(--color-legend-gray)]">
+                  <CryptoReveal text={row.n} />
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
