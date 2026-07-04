@@ -138,7 +138,7 @@ function TerminalWidget() {
   type Line = { type: "input" | "output"; text: string };
 
   const RESUME_URL =
-    "https://drive.google.com/file/d/1H9jwn3A_bsfRPFyE4GUPwypLX_Or35Wo/view?usp=sharing";
+    "https://drive.google.com/file/d/1AUDe1llTaSPHNXLNvXdw_xxmC_zFs6hO/view?usp=sharing";
 
   const [history, setHistory] = useState<Line[]>([
     { type: "output", text: "session initialized — type 'help' to begin" },
