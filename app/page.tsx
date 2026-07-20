@@ -163,8 +163,9 @@ function TerminalWidget() {
     ls: () => [
       "U1  high-concurrency-api-gateway    [shipped]",
       "U2  tuple-cursor-pagination         [shipped]",
-      "U3  logistics-dashboard             [in progress]",
+      "U3  logistics-dashboard             [shipped]",
       "U4  ai-travel-planner               [shipped]",
+      "U4  distributed task_queue          [shipped]"
     ],
     "cat resume": () => {
       window.open(RESUME_URL, "_blank", "noopener,noreferrer");
@@ -479,6 +480,15 @@ export default function Home() {
       tech: "Next.js · Gemini",
       role: "Full-Stack",
       outcome: "API Integration | Tool Calling | Vercel AI SDK"
+    },
+    {
+      id: "U5",
+      title: "Distributed Task-Queue",
+      description: "Task queue like BullMQ uses redis sortedsets, has fault tolerence and redis pub sub , atomicity and idempotency",
+      status: "shipped",
+      tech: "TypeScript · Redis",
+      role: "Backend-Infra",
+      outcome: "Task Queue | Idempotency | Atomicity"
     }
   ];
 
