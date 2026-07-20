@@ -638,8 +638,8 @@ export default function Home() {
               <div className="font-mono text-[13px] text-[var(--color-solder-mask)]"><CryptoReveal text="v2.0" /></div>
               <div className="font-mono text-[13px] text-[var(--color-legend-gray)]"><CryptoReveal text="Aug 2025 – Pres" /></div>
               <div className="font-fieldwork text-[14px] text-[var(--color-ink)] leading-[1.5]">
-                <strong className="font-medium block mb-1">Founder &amp; Operations Lead, The Dough House</strong>
-                Launched operations for an artisanal bakery brand. Developed lightweight digital storefront, managed product branding, organic content strategy, and facilitated customer ordering systems.
+                <strong className="font-medium block mb-1"> The Dough House</strong>
+                Launched  an artisanal bakery brand. Developed lightweight digital storefront, managed product branding facilitated customer ordering systems.
               </div>
             </div>
             <div className="grid grid-cols-[80px_140px_1fr] spec-table-row border-b border-[var(--color-trace-gray)] px-4 py-3 items-start">
